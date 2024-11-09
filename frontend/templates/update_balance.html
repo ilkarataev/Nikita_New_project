@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Изменение баланса</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.14.1/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.14.1/themes/base/jquery-ui.min.css">
+</head>
+<body>
+    <h1>Изменение баланса пользователя</h1>
+    <form action="/api/update_balance" method="post">
+        <label for="email">Email пользователя:</label>
+        <input type="email" id="email" name="email" required><br><br>
+
+        <label for="amount">Сумма:</label>
+        <input type="number" id="amount" name="amount" step="0.01" required><br><br>
+
+        <button type="submit">Обновить баланс</button>
+    </form>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul class="flashes">
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <a href="/">Назад на главную</a>
+
+    <script>
+        $(document).ready(function() {
+            $("#email").autocomplete({
+                source: async function(request, response) {
+                    const data = await fetch(`/api/get_emails?term=${request.term}`);
+                    const emails = await data.json();
+                    response(emails);
+                },
+                minLength: 1
+            });
+        });
+    </script>
+</body>
+</html>
