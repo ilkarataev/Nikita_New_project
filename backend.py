@@ -1,7 +1,7 @@
 import re, sys, pytz
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from flask import Flask, render_template, request, session, redirect, jsonify, url_for
+from flask import Flask, render_template, request, session, redirect, jsonify, url_for,flash
 import pymysql
 import pymysql.cursors
 import logging
@@ -42,15 +42,17 @@ def login_required(func):
     
     return decorator
 
-def set_session(email: str, remember_me: bool = False) -> None:
+def set_session(email: str, group: str, remember_me: bool = False) -> None:
     session['email'] = email
+    session['group'] = group
+    session['balance'] = mysqlfunc.get_balance(email)
     session.permanent = remember_me
 
 @app.route('/')
 @login_required
 def index():
-    print(f'User data: {session}')
-    return render_template('index.html', email=session.get('email'))
+    # print(f'User data: {session}')
+    return render_template('index.html', email=session.get('email'), group=session.get('group'), balance=session.get('balance'))
 
 @app.route('/logout')
 def logout():
@@ -82,16 +84,12 @@ def login():
 
     # Check if password hash needs to be updated
     if ph.check_needs_rehash(account['password']):
-        query = 'UPDATE users SET password = %s WHERE email = %s'
-        params = (ph.hash(password), account['email'])
-        connection = getConnection()
-        cursor = connection.cursor()
-        cursor.execute(query, params)
-        connection.close()
+        update_user_passsword_hash(account['email'], ph.hash(password))
 
     # Set cookie for user session
     set_session(
         email=account['email'], 
+        group=account['group'],
         remember_me='remember-me' in request.form
     )
     
@@ -99,8 +97,10 @@ def login():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    if session.get('group') != 'admin':
+        return redirect('/')
     if request.method == 'GET':
-        return render_template('register.html')
+        return render_template('register.html',)
     
     # Store data to variables 
     password = request.form.get('password')
@@ -127,21 +127,87 @@ def register():
     time_now=current_time_utc.strftime('%Y-%m-%d %H:%M:%S')
     reg_date=pytz.datetime.datetime.now(utc_tz).strftime('%Y-%m-%d %H:%M:%S')
     mysqlfunc.register_user(email, hashed_password, reg_date)
+    # Get user group from database
+    account = mysqlfunc.get_account(email, password)
+    if not account:
+        return render_template('register.html', error='Error retrieving user information')
+
     # We can log the user in right away since no email verification
-    set_session(email=email)
+    set_session(email=email, group=account['group'])
     return redirect('/')
 
+@app.route('/api/get_balance', methods=['GET'])
+@login_required
+def get_balance_route():
+    balance = mysqlfunc.get_balance(session['email'])
+    return jsonify({'balance': balance})
 
+@app.route('/api/update_balance', methods=['GET', 'POST'])
+@login_required
+def update_balance_route():
+    if session.get('group') != 'admin':
+        flash('You are not authorized to perform this action.')
+        return redirect('/')
+    
+    if request.method == 'GET':
+        return render_template('update_balance.html')
+    
+    email = request.form.get('email')
+    amount = float(request.form.get('amount'))
+    mysqlfunc.update_balance(email, amount)
+    flash(f'Balance updated for {email}')
+    return redirect('/api/update_balance.html')
 
+@app.route('/api/get_emails', methods=['GET'])
+@login_required
+def get_emails():
+    if session.get('group') != 'admin':
+        return jsonify([])  # Возвращаем пустой список, если пользователь не администратор
 
+    emails = mysqlfunc.get_all_emails()
+    return jsonify(emails)
 
+@app.route('/api/get_prices', methods=['GET'])
+def get_prices():
+    prices = mysqlfunc.get_all_prices()
+    return jsonify(prices)
+
+@app.route('/api/get_price', methods=['GET'])
+def get_price():
+    original_width = int(request.args.get('original_width'))
+    original_height = int(request.args.get('original_height'))
+    scale_factor = request.args.get('scale_factor')
+    price = mysqlfunc.get_upscale_price(original_width, original_height, scale_factor)
+    if price is not None:
+        return jsonify({'price': price})
+    else:
+        return jsonify({'error': 'Цена не найдена'}), 404
 
 @app.route("/api/image-upscaler", methods=["POST"])
 def upscale_image():
     try:
         request_data = request.get_json()
         logger.info("Request payload: %s", request_data)
-        # image_request = ImageRequest(**request_data)
+        
+        # Получение данных изображения
+        original_width = request_data.get('original_width')
+        original_height = request_data.get('original_height')
+        upscale_width = request_data.get('upscale_width')
+        upscale_height = request_data.get('upscale_height')
+        scale_factor = request_data.get('scale_factor')
+
+        # Получение цены обработки изображения
+        price = mysqlfunc.get_upscale_price(original_width, original_height, upscale_width, upscale_height, scale_factor)
+        if price is None:
+            return jsonify({"detail": "Цена обработки изображения не найдена"}), 400
+
+        # Проверка баланса пользователя
+        email = session.get('email')
+        balance = mysqlfunc.get_balance(email)
+        if balance < price:
+            return jsonify({"detail": "Недостаточно средств на балансе"}), 400
+
+        # Отправка запроса на обработку изображения
         response = httpx.post(
             FREEPIK_API_URL,
             json=request_data,
@@ -153,7 +219,12 @@ def upscale_image():
         logger.info("Request payload: %s", response)
         if response.status_code == 200:
             response_data = response.json()
-            return jsonify(response_data.get('data'))
+            task_id = response_data.get('data').get('task_id')
+
+            # Сохранение запроса в базу данных
+            mysqlfunc.save_api_request(email, original_width, original_height, upscale_width, upscale_height, scale_factor, price)
+
+            return jsonify({"task_id": task_id})
         else:
             return jsonify(response.json()), response.status_code
     except Exception as e:
@@ -168,7 +239,15 @@ def check_status(task_id: str):
         })
         if response.status_code == 200:
             response_data = response.json()
-            return jsonify(response_data.get('data'))
+            status = response_data.get('data').get('status')
+            if status == 'COMPLETED':
+                # Вычитание стоимости из баланса пользователя
+                email = session.get('email')
+                price = mysqlfunc.get_price_by_task_id(task_id)
+                mysqlfunc.update_balance(email, -price)
+                return jsonify(response_data.get('data'))
+            else:
+                return jsonify(response_data.get('data'))
         else:
             return jsonify(response.json()), response.status_code
     except Exception as e:

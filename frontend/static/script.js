@@ -104,6 +104,9 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
                                 document.getElementById('result').innerHTML = `
                                     <img src="${imageUrl}" alt="Увеличенное изображение" style="width: 200px; height: auto;">
                                 `;
+                                
+                                // Обновляем баланс после успешного создания изображения
+                                updateBalance();
                             })
                             .catch(error => {
                                 console.error('Ошибка при загрузке файла:', error);
@@ -125,4 +128,108 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
             alert('Ошибка: ' + error.message);
         }
     };
+});
+
+async function updateBalance() {
+    try {
+        const response = await fetch('/get_balance');
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('balance').innerText = data.balance;
+        } else {
+            console.error('Ошибка при получении баланса');
+        }
+    } catch (error) {
+        console.error('Ошибка при получении баланса:', error);
+    }
+}
+
+async function updateBalance() {
+    try {
+        const response = await fetch('/get_balance');
+        if (response.ok) {
+            const data = await response.json();
+            document.getElementById('balance').innerText = data.balance;
+        } else {
+            console.error('Ошибка при получении баланса');
+        }
+    } catch (error) {
+        console.error('Ошибка при получении баланса:', error);
+    }
+}
+
+// Обновление баланса при загрузке страницы
+document.addEventListener('DOMContentLoaded', updateBalance);
+
+// Обновление размера изображения при выборе файла
+document.getElementById('imageUpload').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const img = new Image();
+        img.onload = function() {
+            const width = img.width;
+            const height = img.height;
+            document.getElementById('imageSize').innerText = `Размер изображения: ${width}x${height}`;
+        };
+        img.src = URL.createObjectURL(file);
+    } else {
+        document.getElementById('imageSize').innerText = 'Размер изображения: Не выбрано';
+    }
+});
+
+// Показать/скрыть таблицу с ценами
+document.getElementById('showPrices').addEventListener('click', async function() {
+    const modal = document.getElementById('pricesTable');
+    if (modal.style.display === 'none' || modal.style.display === '') {
+        const response = await fetch('/api/get_prices');
+        if (response.ok) {
+            const prices = await response.json();
+            const pricesBody = document.getElementById('pricesBody');
+            pricesBody.innerHTML = '';
+            prices.forEach(price => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${price.original_width}x${price.original_height}</td>
+                    <td>${price.upscale_width}x${price.upscale_height}</td>
+                    <td>${price.scale_factor}</td>
+                    <td>${price.price}</td>
+                `;
+                pricesBody.appendChild(row);
+            });
+            modal.style.display = 'block';
+        } else {
+            console.error('Ошибка при получении цен');
+        }
+    } else {
+        modal.style.display = 'none';
+    }
+});
+
+// Закрыть модальное окно
+document.querySelector('.close').addEventListener('click', function() {
+    document.getElementById('pricesTable').style.display = 'none';
+});
+
+// Расчет стоимости обработки изображения
+document.getElementById('uploadForm').addEventListener('change', async function() {
+    const fileInput = document.getElementById('imageUpload');
+    const scaleFactor = document.getElementById('scaleFactor').value;
+    const file = fileInput.files[0];
+    if (file) {
+        const img = new Image();
+        img.onload = async function() {
+            const originalWidth = img.width;
+            const originalHeight = img.height;
+            const upscaleWidth = originalWidth * parseInt(scaleFactor);
+            const upscaleHeight = originalHeight * parseInt(scaleFactor);
+            const response = await fetch(`/api/get_price?original_width=${originalWidth}&original_height=${originalHeight}&scale_factor=${scaleFactor}`);
+            if (response.ok) {
+                const data = await response.json();
+                document.getElementById('result').innerText = `Стоимость обработки: ${data.price} руб.`;
+            } else {
+                console.error('Ошибка при расчете стоимости');
+            }
+        };
+        img.src = URL.createObjectURL(file);
+    }
 });

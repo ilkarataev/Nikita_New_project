@@ -1,13 +1,11 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Text, ForeignKey, BigInteger
+from sqlalchemy import Column, Integer, String, Float, DateTime, Text, ForeignKey
 from sqlalchemy.orm import declarative_base, relationship
-# from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable, SQLAlchemyBaseOAuthAccountTable
 
 Base = declarative_base()
 
 class User(Base):
-    __tablename__ = "users"  # Match the table name expected by SQLAlchemyBaseUserTable
-    # Define additional columns here
-    id = Column(Integer, primary_key=True, autoincrement=True)  # Определение первичного ключа
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, autoincrement=True)
     last_name = Column(String(50), nullable=True, index=True)
     first_name = Column(String(50), nullable=True, index=True)
     email = Column(String(50), nullable=False, index=True)
@@ -17,7 +15,6 @@ class User(Base):
     status = Column(String(50), nullable=True)
     work_status = Column(String(50), nullable=True)
     group = Column(String(50), nullable=True)
-    # balance = relationship("Balance", back_populates="user", uselist=False)
     api_requests = relationship("ApiRequest", back_populates="user")
 
     def __repr__(self):
@@ -37,7 +34,7 @@ class ApiRequest(Base):
     user = relationship("User", back_populates="api_requests")
 
     def __repr__(self):
-        return f"<ApiRequest(id={self.id}, request_date={self.request_date}, price={self.price})>"
+        return f"<ApiRequest(id={self.id})>"
 
 class ImageUpscalePrice(Base):
     __tablename__ = "image_upscale_prices"
@@ -50,4 +47,4 @@ class ImageUpscalePrice(Base):
     price = Column(Float, nullable=False)
 
     def __repr__(self):
-        return f"<ImageUpscalePrice(id={self.id}, original={self.original_width}x{self.original_height}, upscale={self.upscale_width}x{self.upscale_height}, scale_factor={self.scale_factor}, price={self.price})>"
+        return f"<ImageUpscalePrice(id={self.id})>"

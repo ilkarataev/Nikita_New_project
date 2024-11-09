@@ -5,17 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upscaler</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-  
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0,0,0);
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
+    {% if group == 'admin' %}
+        <a class="register-link" href="/register">Register</a>
+        <a class="update-balance-link" href="/update_balance">Изменить баланс</a>
+    {% endif %}
     {% if email %}
-        <div class="balance">Баланс: {{ balance }} руб.</div>
+        <div class="balance">Баланс: <span id="balance">{{ balance }}</span> руб.</div>
         <a class="logout-link" href="/logout">Logout</a>
+        <div class="email">Учетная запись: {{ email }}</div>
     {% endif %}
     <h1>Увеличение изображения</h1>
     <form id="uploadForm">
-        <label for="imageUpload">Выберите изображение для увеличения:</label>
-        <input type="file" id="imageUpload" accept="image/*" required><br><br>
+        <label for="imageUpload">Выберите изображение для увеличения (только JPG и PNG):</label>
+        <input type="file" id="imageUpload" accept=".jpg, .jpeg, .png" required><br><br>
+
+        <div id="imageSize">Размер изображения: Не выбрано</div><br><br>
 
         <label for="scaleFactor">Выберите коэффициент увеличения:</label>
         <select id="scaleFactor">
@@ -60,6 +100,26 @@
     </form>
 
     <div id="result"></div>
+    <button id="showPrices">Показать цены</button>
+    <div id="pricesTable" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Цены на обработку изображений</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Размер входного изображения</th>
+                        <th>Размер выходного изображения</th>
+                        <th>Коэффициент увеличения</th>
+                        <th>Цена (руб.)</th>
+                    </tr>
+                </thead>
+                <tbody id="pricesBody">
+                    <!-- Цены будут загружены сюда -->
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
