@@ -164,6 +164,14 @@ document.addEventListener('DOMContentLoaded', updateBalance);
 document.getElementById('imageUpload').addEventListener('change', function(event) {
     const file = event.target.files[0];
     if (file) {
+        // Проверка размера файла
+        if (file.size > 10 * 1024 * 1024) { // 10 MB
+            alert('Размер изображения не должен превышать 10 мегабайт.');
+            document.getElementById('imageUpload').value = ''; // Сброс поля выбора файла
+            document.getElementById('imageSize').innerText = 'Размер изображения: Не выбрано';
+            return;
+        }
+
         const img = new Image();
         img.onload = function() {
             const width = img.width;
@@ -175,7 +183,6 @@ document.getElementById('imageUpload').addEventListener('change', function(event
         document.getElementById('imageSize').innerText = 'Размер изображения: Не выбрано';
     }
 });
-
 // Показать/скрыть таблицу с ценами
 document.getElementById('showPrices').addEventListener('click', async function() {
     const modal = document.getElementById('pricesTable');

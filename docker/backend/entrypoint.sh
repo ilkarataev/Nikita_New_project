@@ -1,11 +1,21 @@
 #!/bin/sh
 
-
-while ! mysqladmin ping -s -h ${DATABASE_HOST}
+while ! mysqladmin ping -s -h${DATABASE_HOST}
 do
   sleep 3
-  echo "wait mysql"
+  echo "wait until mysql up"
 done
-gunicorn -w 4 -b 0.0.0.0:8000 backend:app
+
+
+case "$1" in
+'migrations')
+    alembic upgrade head
+    ;;
+*)
+    exec gunicorn -w 4 -b 0.0.0.0:8000 backend:app
+    ;;
+esac
+exit 0
+
 
 # exec python backend.py

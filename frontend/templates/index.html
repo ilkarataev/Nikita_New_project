@@ -7,18 +7,24 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    {% if group == 'admin' %}
-        <a class="register-link" href="/register">Register</a>
-        <a class="update-balance-link" href="/update_balance">Изменить баланс</a>
-    {% endif %}
-    {% if email %}
-        <div class="balance">Баланс: <span id="balance">{{ balance }}</span> руб.</div>
-        <a class="logout-link" href="/logout">Logout</a>
-        <div class="email">Учетная запись: {{ email }}</div>
-    {% endif %}
+    <div class="header">
+        <div class="links">
+            {% if group == 'admin' %}
+                <a class="register-link" href="/register">Register</a>
+                <a class="update-balance-link" href="/update_balance">Изменить баланс</a>
+            {% endif %}
+            {% if email %}
+                <a class="logout-link" href="/logout">Logout</a>
+            {% endif %}
+        </div>
+        {% if email %}
+            <div class="balance">Баланс: <span id="balance">{{ balance }}</span> руб.</div>
+            <div class="email">Учетная запись: {{ email }}</div>
+        {% endif %}
+    </div>
     <h1>Увеличение изображения</h1>
     <form id="uploadForm">
-        <label for="imageUpload">Выберите изображение для увеличения (только JPG и PNG):</label>
+        <label for="imageUpload">Выберите изображение для увеличения (только JPG и PNG) не более 10mb:</label>
         <input type="file" id="imageUpload" accept=".jpg, .jpeg, .png" required><br><br>
 
         <div id="imageSize">Размер изображения: Не выбрано</div><br><br>
@@ -27,7 +33,7 @@
         <select id="scaleFactor">
             <option value="2x">2x</option>
             <option value="4x">4x</option>
-            <option value="8x">8x</option>
+            <!-- <option value="8x">8x</option> -->
         </select><br><br>
 
         <label for="optimizedFor">Оптимизировать для:</label>
@@ -43,7 +49,7 @@
             <option value="science_fiction_n_horror">Научная фантастика и ужасы</option>
         </select><br><br>
 
-        <label for="prompt">Описание изображение (промпт):</label>
+        <label for="prompt">Описание изображение (промпт) на англиском:</label>
         <input type="text" id="prompt" placeholder="Введите подсказку для улучшения"><br><br>
 
         <label for="creativity">Креативность (-10 до 10):</label>
@@ -61,11 +67,9 @@
             <option value="magnific_sharpy">Magnific Sharpy</option>
             <option value="magnific_sparkle">Magnific Sparkle</option>
         </select><br><br>
-        <div id="imagePriceDesc" value="0"></div>
-        </div>
+        <div id="imagePriceDesc"></div>
         <button type="submit">Увеличить изображение</button>
     </form>
-
 
     <div id="result"></div>
     <button id="showPrices">Показать цены</button>
@@ -76,9 +80,9 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Размер входного изо.</th>
-                        <th>Размер выходного изо.</th>
-                        <th>Коэф.увел.</th>
+                        <th>Размер входного изображения</th>
+                        <th>Размер выходного изображения</th>
+                        <th>Коэффициент увеличения</th>
                         <th>Цена (руб.)</th>
                     </tr>
                 </thead>

@@ -6,11 +6,10 @@ import pymysql
 import pymysql.cursors
 import logging
 from libs import config as configs
-# from utils import login_required, set_session
 from libs import mysql as mysqlfunc
 import httpx
 from functools import wraps
-
+from flask_cors import CORS
 utc_tz = pytz.timezone('UTC')
 
 FREEPIK_API_KEY = configs.freepik_api_token
@@ -22,7 +21,7 @@ app.secret_key = 'xpSm7p5bgJY8rNoBjGWiz5yjxM-NEBlW6SIBI62OkLc='
 # Настройка логирования
 logging.basicConfig(level=logging.INFO)
 
-# # Настройка CORS
+# # # Настройка CORS
 # app.add_middleware(
 #     CORSMiddleware,
 #     allow_origins=["*"],  # Разрешить все источники
@@ -30,6 +29,8 @@ logging.basicConfig(level=logging.INFO)
 #     allow_methods=["*"],  # Разрешить все методы
 #     allow_headers=["*"],  # Разрешить все заголовки
 # )
+
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 def login_required(func):
     @wraps(func)
@@ -142,7 +143,7 @@ def get_balance_route():
     balance = mysqlfunc.get_balance(session['email'])
     return jsonify({'balance': balance})
 
-@app.route('/api/update_balance', methods=['GET', 'POST'])
+@app.route('/update_balance', methods=['GET', 'POST'])
 @login_required
 def update_balance_route():
     if session.get('group') != 'admin':
@@ -156,7 +157,7 @@ def update_balance_route():
     amount = float(request.form.get('amount'))
     mysqlfunc.update_balance(email, amount)
     flash(f'Balance updated for {email}')
-    return redirect('/api/update_balance.html')
+    return redirect('/update_balance')
 
 @app.route('/api/get_emails', methods=['GET'])
 @login_required

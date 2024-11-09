@@ -7,11 +7,12 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh;
+    min-height: 100vh;
 }
 
 h1 {
     color: #333;
+    margin-top: 20px; /* Добавляем отступ сверху */
 }
 
 form {
@@ -62,9 +63,23 @@ button:hover {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
+.header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.header .links {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
 .logout-link, .register-link, .update-balance-link {
-    position: absolute;
-    top: 10px;
     text-decoration: none;
     color: #fff;
     padding: 10px 20px;
@@ -73,7 +88,6 @@ button:hover {
 }
 
 .logout-link {
-    right: 10px;
     background-color: #007bff;
 }
 
@@ -82,7 +96,6 @@ button:hover {
 }
 
 .register-link {
-    right: 150px;
     background-color: #28a745;
 }
 
@@ -91,7 +104,6 @@ button:hover {
 }
 
 .update-balance-link {
-    right: 300px;
     background-color: #ffc107;
 }
 
@@ -100,11 +112,9 @@ button:hover {
 }
 
 .balance {
-    position: absolute;
-    top: 10px;
-    left: 10px;
     color: #000;
     font-weight: bold;
+    margin-bottom: 10px;
 }
 
 .loader {
@@ -139,11 +149,9 @@ button:hover {
 }
 
 .email {
-    position: absolute;
-    top: 50px;
-    right: 10px;
     color: #000;
     font-weight: bold;
+    margin-bottom: 10px;
 }
 
 .modal {
@@ -177,4 +185,30 @@ button:hover {
     color: black;
     text-decoration: none;
     cursor: pointer;
+}
+
+/* Медиа-запросы для мобильных устройств */
+@media (max-width: 600px) {
+    .header {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .header .links {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .logout-link, .register-link, .update-balance-link {
+        width: 100%;
+        text-align: center;
+    }
+
+    .balance, .email {
+        text-align: center;
+    }
+
+    h1 {
+        margin-top: 40px; /* Увеличиваем отступ сверху для заголовка */
+    }
 }
