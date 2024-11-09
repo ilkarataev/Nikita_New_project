@@ -148,15 +148,15 @@ def get_upscale_price(original_width, original_height, scale_factor):
         print(f'В функции mysql get_upscale_price что-то пошло не так: {e}')
         return None
 
-def save_api_request(email, original_width, original_height, upscale_width, upscale_height, scale_factor, price):
+def save_api_request(email, original_width, original_height, scale_factor, price, task_id):
     try:
         with getConnection() as connection:
             with connection.cursor() as cursor:
                 sql = '''
-                INSERT INTO api_requests (user_id, request_date, original_width, original_height, upscale_width, upscale_height, scale_factor, price)
-                VALUES ((SELECT id FROM users WHERE email = %s), NOW(), %s, %s, %s, %s, %s, %s)
+                INSERT INTO api_requests (user_id, request_date, original_width, original_height, scale_factor, price, task_id)
+                VALUES ((SELECT id FROM users WHERE email = %s), NOW(), %s, %s, %s, %s, %s)
                 '''
-                cursor.execute(sql, (email, original_width, original_height, upscale_width, upscale_height, scale_factor, price))
+                cursor.execute(sql, (email, original_width, original_height, scale_factor, price, task_id))
                 connection.commit()
     except Exception as e:
         print(f'В функции mysql save_api_request что-то пошло не так: {e}')

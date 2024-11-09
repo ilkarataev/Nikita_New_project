@@ -7,6 +7,7 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
     const creativity = parseInt(document.getElementById('creativity').value);
     const resemblance = parseInt(document.getElementById('resemblance').value);
     const engine = document.getElementById('engine').value;
+    const imagePrice = parseFloat(document.getElementById('imagePriceDesc').value.replace(/[^\d.-]/g, ''));
 
     if (fileInput.files.length === 0) {
         alert('Пожалуйста, выберите изображение.');
@@ -26,127 +27,125 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
     reader.onload = async function () {
         const base64Image = reader.result.split(',')[1];
 
-        // Значения по умолчанию
-        const defaultValues = {
-            scale_factor: "2x",
-            optimized_for: "standard",
-            prompt: "",
-            creativity: 0,
-            resemblance: 0,
-            engine: "automatic"
-        };
+        const img = new Image();
+        img.onload = async function() {
+            const originalWidth = img.width;
+            const originalHeight = img.height;
 
-        // Текущие значения
-        const currentValues = {
-            scale_factor: scaleFactor,
-            optimized_for: optimizedFor,
-            prompt: prompt,
-            creativity: creativity,
-            resemblance: resemblance,
-            engine: engine
-        };
+            // Значения по умолчанию
+            const defaultValues = {
+                scale_factor: "2x",
+                optimized_for: "standard",
+                prompt: "",
+                creativity: 0,
+                resemblance: 0,
+                engine: "automatic"
+            };
 
-        // Формирование тела запроса с измененными значениями
-        const requestBody = { image: base64Image };
-        Object.keys(currentValues).forEach(key => {
-            if (currentValues[key] !== defaultValues[key]) {
-                requestBody[key] = currentValues[key];
-            }
-        });
+            // Текущие значения
+            const currentValues = {
+                scale_factor: scaleFactor,
+                optimized_for: optimizedFor,
+                prompt: prompt,
+                creativity: creativity,
+                resemblance: resemblance,
+                engine: engine
+            };
 
-        try {
-            console.log('Отправка запроса на сервер...');
-            const response = await fetch('/api/image-upscaler', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestBody)
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                console.log('Ответ сервера:', data);
-                const taskId = data.task_id;
-                console.log('Task ID:', taskId);
-
-                // Отображение анимации "Генерируется..."
-                document.getElementById('result').innerHTML = '<div class="loader"></div>';
-
-                // Проверка статуса задачи
-                let status = 'IN_PROGRESS';
-                while (status === 'IN_PROGRESS' || status === 'PENDING' || status === 'CREATED') {
-                    console.log('Запрос статуса задачи...');
-                    const statusResponse = await fetch(`/api/image-upscaler/${taskId}`, {
-                        method: 'GET'
-                    });
-                    const statusData = await statusResponse.json();
-                    status = statusData.status;
-                    console.log('Статус задачи:', status);
-                    if (status === 'COMPLETED') {
-                        const imageUrl = statusData.generated[0];
-                    
-                        // Используем fetch для загрузки файла
-                        fetch(imageUrl)
-                            .then(response => response.blob())
-                            .then(blob => {
-                                // Создаем URL для скачивания Blob-объекта
-                                const downloadUrl = URL.createObjectURL(blob);
-                                const downloadLink = document.createElement('a');
-                                downloadLink.href = downloadUrl;
-                                downloadLink.download = 'upscaled_image.png'; // Указываем имя файла для загрузки
-                                document.body.appendChild(downloadLink);
-                                downloadLink.click();
-                                document.body.removeChild(downloadLink);
-                                URL.revokeObjectURL(downloadUrl); // Очищаем URL после скачивания
-                    
-                                // Отображаем результат на странице
-                                document.getElementById('result').innerHTML = `
-                                    <img src="${imageUrl}" alt="Увеличенное изображение" style="width: 200px; height: auto;">
-                                `;
-                                
-                                // Обновляем баланс после успешного создания изображения
-                                updateBalance();
-                            })
-                            .catch(error => {
-                                console.error('Ошибка при загрузке файла:', error);
-                                alert('Не удалось скачать файл. Попробуйте ещё раз.');
-                            });
-                                        
-                    } else if (status === 'FAILED') {
-                        alert('Ошибка при обработке изображения.');
-                        document.getElementById('result').innerHTML = '';
-                        break;
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 5000)); // Ожидание 5 секунд перед повторной проверкой
+            // Формирование тела запроса с измененными значениями
+            const requestBody = {
+                image: base64Image,
+                image_price: imagePrice,
+                original_width: originalWidth,
+                original_height: originalHeight
+            };
+            Object.keys(currentValues).forEach(key => {
+                if (currentValues[key] !== defaultValues[key]) {
+                    requestBody[key] = currentValues[key];
                 }
-            } else {
-                const errorData = await response.json();
-                alert('Ошибка: ' + errorData.message);
+            });
+
+            try {
+                console.log('Отправка запроса на сервер...');
+                const response = await fetch('/api/image-upscaler', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Ответ сервера:', data);
+                    const taskId = data.task_id;
+                    console.log('Task ID:', taskId);
+
+                    // Отображение анимации "Генерируется..."
+                    document.getElementById('result').innerHTML = '<div class="loader"></div>';
+
+                    // Проверка статуса задачи
+                    let status = 'IN_PROGRESS';
+                    while (status === 'IN_PROGRESS' || status === 'PENDING' || status === 'CREATED') {
+                        console.log('Запрос статуса задачи...');
+                        const statusResponse = await fetch(`/api/image-upscaler/${taskId}`, {
+                            method: 'GET'
+                        });
+                        const statusData = await statusResponse.json();
+                        status = statusData.status;
+                        console.log('Статус задачи:', status);
+                        if (status === 'COMPLETED') {
+                            const imageUrl = statusData.generated[0];
+
+                            // Используем fetch для загрузки файла
+                            fetch(imageUrl)
+                                .then(response => response.blob())
+                                .then(blob => {
+                                    // Создаем URL для скачивания Blob-объекта
+                                    const downloadUrl = URL.createObjectURL(blob);
+                                    const downloadLink = document.createElement('a');
+                                    downloadLink.href = downloadUrl;
+                                    downloadLink.download = 'upscaled_image.png'; // Указываем имя файла для загрузки
+                                    document.body.appendChild(downloadLink);
+                                    downloadLink.click();
+                                    document.body.removeChild(downloadLink);
+                                    URL.revokeObjectURL(downloadUrl); // Очищаем URL после скачивания
+
+                                    // Отображаем результат на странице
+                                    document.getElementById('result').innerHTML = `
+                                        <img src="${imageUrl}" alt="Увеличенное изображение" style="width: 200px; height: auto;">
+                                    `;
+
+                                    // Обновляем баланс после успешного создания изображения
+                                    updateBalance();
+                                })
+                                .catch(error => {
+                                    console.error('Ошибка при загрузке файла:', error);
+                                    alert('Не удалось скачать файл. Попробуйте ещё раз.');
+                                });
+
+                        } else if (status === 'FAILED') {
+                            alert('Ошибка при обработке изображения.');
+                            document.getElementById('result').innerHTML = '';
+                            break;
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 5000)); // Ожидание 5 секунд перед повторной проверкой
+                    }
+                } else {
+                    const errorData = await response.json();
+                    alert('Ошибка: ' + errorData.message);
+                }
+            } catch (error) {
+                alert('Ошибка: ' + error.message);
             }
-        } catch (error) {
-            alert('Ошибка: ' + error.message);
-        }
+        };
+        img.src = URL.createObjectURL(file);
     };
 });
 
 async function updateBalance() {
     try {
-        const response = await fetch('/get_balance');
-        if (response.ok) {
-            const data = await response.json();
-            document.getElementById('balance').innerText = data.balance;
-        } else {
-            console.error('Ошибка при получении баланса');
-        }
-    } catch (error) {
-        console.error('Ошибка при получении баланса:', error);
-    }
-}
-
-async function updateBalance() {
-    try {
-        const response = await fetch('/get_balance');
+        const response = await fetch('/api/get_balance');
         if (response.ok) {
             const data = await response.json();
             document.getElementById('balance').innerText = data.balance;
@@ -220,12 +219,12 @@ document.getElementById('uploadForm').addEventListener('change', async function(
         img.onload = async function() {
             const originalWidth = img.width;
             const originalHeight = img.height;
-            const upscaleWidth = originalWidth * parseInt(scaleFactor);
-            const upscaleHeight = originalHeight * parseInt(scaleFactor);
             const response = await fetch(`/api/get_price?original_width=${originalWidth}&original_height=${originalHeight}&scale_factor=${scaleFactor}`);
             if (response.ok) {
                 const data = await response.json();
-                document.getElementById('result').innerText = `Стоимость обработки: ${data.price} руб.`;
+                document.getElementById('imagePriceDesc').innerText = `Стоимость обработки: ${data.price} руб.`;
+                document.getElementById('imagePriceDesc').value = `${data.price}`;
+                document.getElementById('imagePriceDesc').classList.add('price-updated');
             } else {
                 console.error('Ошибка при расчете стоимости');
             }

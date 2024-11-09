@@ -186,18 +186,17 @@ def get_price():
 @app.route("/api/image-upscaler", methods=["POST"])
 def upscale_image():
     try:
+        scale_factor=2
         request_data = request.get_json()
-        logger.info("Request payload: %s", request_data)
-        
-        # Получение данных изображения
-        original_width = request_data.get('original_width')
-        original_height = request_data.get('original_height')
-        upscale_width = request_data.get('upscale_width')
-        upscale_height = request_data.get('upscale_height')
-        scale_factor = request_data.get('scale_factor')
 
-        # Получение цены обработки изображения
-        price = mysqlfunc.get_upscale_price(original_width, original_height, upscale_width, upscale_height, scale_factor)
+        original_width = request_data.pop('original_width', None)
+        original_height = request_data.pop('original_height', None)
+        image_price = request_data.pop('image_price', None)
+        if request_data.get(scale_factor) is not None:
+            scale_factor = request_data.get('scale_factor')
+
+        # # Получение цены обработки изображения
+        price = mysqlfunc.get_upscale_price(original_width, original_height, scale_factor)
         if price is None:
             return jsonify({"detail": "Цена обработки изображения не найдена"}), 400
 
@@ -206,7 +205,7 @@ def upscale_image():
         balance = mysqlfunc.get_balance(email)
         if balance < price:
             return jsonify({"detail": "Недостаточно средств на балансе"}), 400
-
+        # logger.info("Data: %s", request_data)
         # Отправка запроса на обработку изображения
         response = httpx.post(
             FREEPIK_API_URL,
@@ -216,13 +215,13 @@ def upscale_image():
                 'x-freepik-api-key': FREEPIK_API_KEY
             }
         )
-        logger.info("Request payload: %s", response)
+        # logger.info("Request payload: %s", response)
         if response.status_code == 200:
             response_data = response.json()
             task_id = response_data.get('data').get('task_id')
 
             # Сохранение запроса в базу данных
-            mysqlfunc.save_api_request(email, original_width, original_height, upscale_width, upscale_height, scale_factor, price)
+            mysqlfunc.save_api_request(email, original_width, original_height, scale_factor, image_price, task_id)
 
             return jsonify({"task_id": task_id})
         else:

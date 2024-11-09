@@ -27,10 +27,9 @@ class ApiRequest(Base):
     request_date = Column(DateTime, nullable=False)
     original_width = Column(Integer, nullable=False)
     original_height = Column(Integer, nullable=False)
-    upscale_width = Column(Integer, nullable=False)
-    upscale_height = Column(Integer, nullable=False)
     scale_factor = Column(String(10), nullable=False)
     price = Column(Float, nullable=False)
+    task_id = Column(String(250), nullable=True)
     user = relationship("User", back_populates="api_requests")
 
     def __repr__(self):
