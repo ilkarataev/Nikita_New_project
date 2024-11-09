@@ -3,10 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Freepik Image Upscaler API</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Upscaler</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  
 </head>
 <body>
+    {% if email %}
+        <div class="balance">Баланс: {{ balance }} руб.</div>
+        <a class="logout-link" href="/logout">Logout</a>
+    {% endif %}
     <h1>Увеличение изображения</h1>
     <form id="uploadForm">
         <label for="imageUpload">Выберите изображение для увеличения:</label>
@@ -17,7 +22,6 @@
             <option value="2x">2x</option>
             <option value="4x">4x</option>
             <option value="8x">8x</option>
-            <option value="16x">16x</option>
         </select><br><br>
 
         <label for="optimizedFor">Оптимизировать для:</label>
@@ -33,22 +37,18 @@
             <option value="science_fiction_n_horror">Научная фантастика и ужасы</option>
         </select><br><br>
 
-        <label for="prompt">Подсказка (Prompt):</label>
+        <label for="prompt">Описание изображение (промпт):</label>
         <input type="text" id="prompt" placeholder="Введите подсказку для улучшения"><br><br>
 
         <label for="creativity">Креативность (-10 до 10):</label>
-        <input type="number" id="creativity" min="-10" max="10" value="0"><br><br>
-
-        <label for="hdr">HDR (-10 до 10):</label>
-        <input type="number" id="hdr" min="-10" max="10" value="0"><br><br>
+        <input type="range" id="creativity" min="-10" max="10" value="0" oninput="document.getElementById('creativityValue').innerText = this.value">
+        <span id="creativityValue">0</span><br><br>
 
         <label for="resemblance">Сходство (-10 до 10):</label>
-        <input type="number" id="resemblance" min="-10" max="10" value="0"><br><br>
+        <input type="range" id="resemblance" min="-10" max="10" value="0" oninput="document.getElementById('resemblanceValue').innerText = this.value">
+        <span id="resemblanceValue">0</span><br><br>
 
-        <label for="fractality">Фрактальность (-10 до 10):</label>
-        <input type="number" id="fractality" min="-10" max="10" value="0"><br><br>
-
-        <label for="engine">Движок:</label>
+        <label for="engine">Движок/модель:</label>
         <select id="engine">
             <option value="automatic">Автоматический</option>
             <option value="magnific_illusio">Magnific Illusio</option>
@@ -61,6 +61,6 @@
 
     <div id="result"></div>
 
-    <script src="script.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
