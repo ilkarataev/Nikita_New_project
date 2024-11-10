@@ -245,7 +245,8 @@ def check_status(task_id: str):
                 email = session.get('email')
                 price = mysqlfunc.get_price_by_task_id(task_id)
                 mysqlfunc.update_balance(email, -price)
-                return jsonify(response_data.get('data'))
+                image_url = response_data.get('data').get('generated')[0]
+                return jsonify({'status': status, 'image_url': f'/api/download_image?url={image_url}'})
             else:
                 return jsonify(response_data.get('data'))
         else:
@@ -253,6 +254,20 @@ def check_status(task_id: str):
     except Exception as e:
         logger.error("Error: %s", str(e))
         return jsonify({"detail": "Ошибка обработки запроса"}), 422
+
+@app.route('/api/download_image', methods=['GET'])
+def download_image():
+    url = request.args.get('url')
+    if not url:
+        return jsonify({"detail": "URL не указан"}), 400
+
+    try:
+        response = httpx.get(url)
+        headers = {key: value for key, value in response.headers.items() if key.lower() in ['content-type', 'content-length']}
+        return response.content, response.status_code, headers
+    except Exception as e:
+        logger.error("Error: %s", str(e))
+        return jsonify({"detail": "Ошибка при запросе к прокси"}), 500
 
 
 if __name__ == '__main__':

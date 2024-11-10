@@ -95,9 +95,9 @@ document.getElementById('uploadForm').addEventListener('submit', async function(
                         status = statusData.status;
                         console.log('Статус задачи:', status);
                         if (status === 'COMPLETED') {
-                            const imageUrl = statusData.generated[0];
+                            const imageUrl = statusData.image_url;
 
-                            // Используем fetch для загрузки файла
+                            // Используем сервер для загрузки файла
                             fetch(imageUrl)
                                 .then(response => response.blob())
                                 .then(blob => {
@@ -183,6 +183,7 @@ document.getElementById('imageUpload').addEventListener('change', function(event
         document.getElementById('imageSize').innerText = 'Размер изображения: Не выбрано';
     }
 });
+
 // Показать/скрыть таблицу с ценами
 document.getElementById('showPrices').addEventListener('click', async function() {
     const modal = document.getElementById('pricesTable');

@@ -1,18 +1,18 @@
 version: '3.7'
 services:
-    backend:
-        container_name: upscale_backend
-        build:
-            context: .
-            dockerfile: './docker/backend/Dockerfile'
-        restart: 'always'
-        ports: ['${IFACE}:8000:8000']
-        depends_on:
-          - mysql
-        environment:
-            MYSQL_DATABASE: mysql
-        env_file:
-        - .env
+    # backend:
+    #     container_name: upscale_backend
+    #     build:
+    #         context: .
+    #         dockerfile: './docker/backend/Dockerfile'
+    #     restart: 'always'
+    #     ports: ['${IFACE}:8000:8000']
+    #     depends_on:
+    #       - mysql
+    #     environment:
+    #         MYSQL_DATABASE: mysql
+    #     env_file:
+    #     - .env
     mysql:
         container_name: upscale_mysql
         image: 'mysql:8.0'
