@@ -243,8 +243,8 @@ def check_status(task_id: str):
             if status == 'COMPLETED':
                 # Вычитание стоимости из баланса пользователя
                 email = session.get('email')
-                price = mysqlfunc.get_price_by_task_id(task_id)
-                mysqlfunc.update_balance(email, -price)
+                price = (int(mysqlfunc.get_price_by_task_id(task_id)) * -1)
+                mysqlfunc.update_balance(email, price)
                 image_url = response_data.get('data').get('generated')[0]
                 return jsonify({'status': status, 'image_url': f'/api/download_image?url={image_url}'})
             else:
