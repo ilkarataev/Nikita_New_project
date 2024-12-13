@@ -79,12 +79,20 @@ button:hover {
     margin-bottom: 10px;
 }
 
-.logout-link, .register-link, .update-balance-link {
+.logout-link, .register-link, .update-balance-link, .history-link {
     text-decoration: none;
     color: #fff;
     padding: 10px 20px;
     border-radius: 5px;
     font-weight: bold;
+}
+
+.history-link {
+    background-color: #ff8800;
+}
+
+.history-link:hover {
+    background-color: #b38300;
 }
 
 .logout-link {
@@ -199,7 +207,7 @@ button:hover {
         align-items: center;
     }
 
-    .logout-link, .register-link, .update-balance-link {
+    .logout-link, .register-link, .update-balance-link, .history-link {
         width: 100%;
         text-align: center;
     }

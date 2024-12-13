@@ -31,7 +31,8 @@ class ApiRequest(Base):
     price = Column(Float, nullable=False)
     task_id = Column(String(250), nullable=True)
     user = relationship("User", back_populates="api_requests")
-
+    status = Column(String(250), nullable=True)
+    generated_image_url = Column(String(450), nullable=True)
     def __repr__(self):
         return f"<ApiRequest(id={self.id})>"
 

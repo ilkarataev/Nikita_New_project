@@ -137,6 +137,12 @@ def register():
     set_session(email=email, group=account['group'])
     return redirect('/')
 
+@app.route('/history')
+@login_required
+def history():
+    email = session.get('email')
+    return render_template('history.html', email=email)
+
 @app.route('/api/get_balance', methods=['GET'])
 @login_required
 def get_balance_route():
@@ -184,7 +190,7 @@ def get_price():
     else:
         return jsonify({'error': 'Цена не найдена'}), 404
 
-@app.route("/api/image-upscaler", methods=["POST"])
+@app.route('/api/image-upscaler', methods=['POST'])
 def upscale_image():
     try:
         scale_factor=2
@@ -199,13 +205,13 @@ def upscale_image():
         # # Получение цены обработки изображения
         price = mysqlfunc.get_upscale_price(original_width, original_height, scale_factor)
         if price is None:
-            return jsonify({"detail": "Цена обработки изображения не найдена"}), 400
+            return jsonify({"message": "Цена обработки изображения не найдена"}), 400
 
         # Проверка баланса пользователя
         email = session.get('email')
         balance = mysqlfunc.get_balance(email)
         if balance < price:
-            return jsonify({"detail": "Недостаточно средств на балансе"}), 400
+            return jsonify({"message": "Недостаточно средств на балансе"}), 400
         # logger.info("Data: %s", request_data)
         # Отправка запроса на обработку изображения
         response = httpx.post(
@@ -226,49 +232,81 @@ def upscale_image():
 
             return jsonify({"task_id": task_id})
         else:
-            return jsonify(response.json()), response.status_code
+            return jsonify({"message": "Проблемы при отправке запроса"}), response.status_code
+            logger.error("request payload: %s, status %s", response.text, response.status_code)
+            # logger.error("Error:", str(e))
+            # return jsonify(response.json()), response.status_code
     except Exception as e:
         logger.error("Error: %s", str(e))
-        return jsonify({"detail": "Ошибка обработки запроса"}), 422
+        return jsonify({"message": "Проблемы обработки запроса"}), 422
 
-@app.route("/api/image-upscaler/<task_id>", methods=["GET"])
+@app.route('/api/image-upscaler/<task_id>', methods=["GET"])
 def check_status(task_id: str):
     try:
         response = httpx.get(f"{FREEPIK_API_URL}/{task_id}", headers={
+            'Content-Type': 'application/json',
             'x-freepik-api-key': FREEPIK_API_KEY
         })
+        logger.info("Response status: %s", response.status_code)
+        logger.info("Response content: %s", response.text)
         if response.status_code == 200:
             response_data = response.json()
             status = response_data.get('data').get('status')
             if status == 'COMPLETED':
+                image_url = response_data.get('data').get('generated')[0]
+                logger.info("Image URL: %s", image_url)
                 # Вычитание стоимости из баланса пользователя
                 email = session.get('email')
                 price = (int(mysqlfunc.get_price_by_task_id(task_id)) * -1)
                 mysqlfunc.update_balance(email, price)
-                image_url = response_data.get('data').get('generated')[0]
+                mysqlfunc.update_api_request_status(task_id, status, image_url)
                 return jsonify({'status': status, 'image_url': f'/api/download_image?url={image_url}'})
             else:
+                mysqlfunc.update_api_request_status(task_id, status, NULL)
                 return jsonify(response_data.get('data'))
         else:
             return jsonify(response.json()), response.status_code
     except Exception as e:
         logger.error("Error: %s", str(e))
-        return jsonify({"detail": "Ошибка обработки запроса"}), 422
+        return jsonify({"message": "Проблемы обработки запроса task_id"}), 422
 
 @app.route('/api/download_image', methods=['GET'])
 def download_image():
     url = request.args.get('url')
     if not url:
-        return jsonify({"detail": "URL не указан"}), 400
+        return jsonify({"message": "URL не указан"}), 400
 
     try:
         response = httpx.get(url)
         headers = {key: value for key, value in response.headers.items() if key.lower() in ['content-type', 'content-length']}
         return response.content, response.status_code, headers
     except Exception as e:
-        logger.error("Error: %s", str(e))
-        return jsonify({"detail": "Ошибка при запросе к прокси"}), 500
+        # logger.error("Error: %s", str(e))
+        return jsonify({"message": "Проблема с прокси"}), 500
 
+@app.route('/api/images_urls/<email>', methods=['GET'])
+def images_urls(email: str):
+    try:
+        # logger.info("Email: %s", email)
+        images_list = mysqlfunc.get_generated_images_urls(email)
+        if images_list is not None:
+            valid_urls = []
+            for item in images_list:
+                url = item.get('generated_image_url')
+                if url:
+                    try:
+                        response = httpx.head(url)
+                        if response.status_code == 200:
+                            valid_urls.append(url)
+                    except Exception as e:
+                        pass
+                        # logger.error("Error checking URL %s: %s", url, str(e))
+            return jsonify(valid_urls)
+        else:
+            return jsonify({"message": "Нет доступных изображений"}), 404
+    except Exception as e:
+        # logger.error("Error: %s", str(e))
+        return jsonify({"message": "запрос images_urls"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=False)

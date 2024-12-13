@@ -161,6 +161,38 @@ def save_api_request(email, original_width, original_height, scale_factor, price
     except Exception as e:
         print(f'В функции mysql save_api_request что-то пошло не так: {e}')
 
+def update_api_request_status(task_id, status, generated_image_url):
+    try:
+        with getConnection() as connection:
+            with connection.cursor() as cursor:
+                sql = 'UPDATE api_requests SET status = %s, generated_image_url= %s  WHERE task_id = %s'
+                cursor.execute(sql, (status, generated_image_url, task_id))
+                connection.commit()
+                return True
+    except Exception as e:
+        print(f'В функции mysql update_api_request_status что-то пошло не так: {e}')
+        return False
+
+
+def get_generated_images_urls(email):
+    try:
+        with getConnection() as connection:
+            with connection.cursor() as cursor:
+                sql = 'SELECT id FROM users WHERE email = %s'
+                cursor.execute(sql, (email,))
+                user_id = cursor.fetchone().get('id')
+                sql = 'SELECT generated_image_url FROM api_requests WHERE user_id = %s AND generated_image_url IS NOT NULL' 
+                cursor.execute(sql, (user_id,))
+                result = cursor.fetchall()
+                if result:
+                    return result
+                return None
+
+    except Exception as e:
+        print(f'В функции mysql get_generated_images_urls что-то пошло не так: {e}')
+        return False
+
+
 def get_price_by_task_id(task_id):
     try:
         with getConnection() as connection:

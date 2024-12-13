@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>История запросов</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <h1>История запросов за последние 7 дней</h1>
+    <h6>Запросы за последние 7 календарных дней будут отображаться, если они имеются</h6>
+    <div id="historyContainer"></div>
+    <a href="/">Назад на главную</a>
+
+    <script>
+        const email = "{{ email }}";
+    </script>
+    <script src="{{ url_for('static', filename='history.js') }}"></script>
+</body>
+</html>
